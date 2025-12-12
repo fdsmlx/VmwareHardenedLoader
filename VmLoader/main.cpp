@@ -730,7 +730,7 @@ extern "C"
 				break;
 
 			// Replace with new signature (pad with spaces if needed)
-			SIZE_T copyLen = min(OldSigLength, NewSigLength);
+			SIZE_T copyLen = (OldSigLength < NewSigLength) ? OldSigLength : NewSigLength;
 			memcpy(find, NewSig, copyLen);
 			if (copyLen < OldSigLength) {
 				memset((PUCHAR)find + copyLen, ' ', OldSigLength - copyLen);

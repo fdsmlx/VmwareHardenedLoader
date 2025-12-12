@@ -36,8 +36,22 @@ __forceinline BOOLEAN VmIsStringMatch(const char* str1, const char* str2, SIZE_T
     return RtlCompareMemory(str1, str2, length) == length;
 }
 
+// Helper for wide string length in kernel mode
+__forceinline SIZE_T VmWideStringLength(const WCHAR* str) {
+    if (!str) return 0;
+    SIZE_T len = 0;
+    while (str[len] != L'\0') {
+        len++;
+    }
+    return len;
+}
+
 __forceinline BOOLEAN VmIsWideStringMatch(const WCHAR* str1, const WCHAR* str2) {
-    return wcscmp(str1, str2) == 0;
+    if (!str1 || !str2) return FALSE;
+    SIZE_T len1 = VmWideStringLength(str1);
+    SIZE_T len2 = VmWideStringLength(str2);
+    if (len1 != len2) return FALSE;
+    return RtlCompareMemory(str1, str2, len1 * sizeof(WCHAR)) == (len1 * sizeof(WCHAR));
 }
 
 // Search for pattern in memory
@@ -141,12 +155,17 @@ static inline VOID VmGenerateSerialNumber(char* buffer, SIZE_T bufferSize,
         return;
     }
     
-    // Copy prefix
-    SIZE_T prefixLen = strlen(prefix);
+    // Calculate prefix length manually (kernel mode safe)
+    SIZE_T prefixLen = 0;
+    while (prefix[prefixLen] != '\0' && prefixLen < bufferSize - 8) {
+        prefixLen++;
+    }
+    
     if (prefixLen > bufferSize - 8) {
         prefixLen = bufferSize - 8;
     }
     
+    // Copy prefix
     RtlCopyMemory(buffer, prefix, prefixLen);
     
     // Generate random suffix
@@ -182,7 +201,7 @@ static inline NTSTATUS VmSafeCopyString(char* dest, SIZE_T destSize,
         return STATUS_INVALID_PARAMETER;
     }
     
-    SIZE_T copySize = min(destSize - 1, srcSize);
+    SIZE_T copySize = ((destSize - 1) < srcSize) ? (destSize - 1) : srcSize;
     RtlCopyMemory(dest, src, copySize);
     dest[copySize] = '\0';
     
@@ -197,7 +216,7 @@ static inline NTSTATUS VmSafeCopyWideString(WCHAR* dest, SIZE_T destSize,
         return STATUS_INVALID_PARAMETER;
     }
     
-    SIZE_T copySize = min(destSize - 1, srcSize);
+    SIZE_T copySize = ((destSize - 1) < srcSize) ? (destSize - 1) : srcSize;
     RtlCopyMemory(dest, src, copySize * sizeof(WCHAR));
     dest[copySize] = L'\0';
     

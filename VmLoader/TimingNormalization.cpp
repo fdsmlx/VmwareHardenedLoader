@@ -36,6 +36,12 @@ static ULONG64 TimingGetExpectedTsc(void) {
     LARGE_INTEGER currentQpc;
     KeQueryPerformanceCounter(&currentQpc);
     
+    // Check for zero frequency to avoid division by zero
+    if (g_PerformanceFrequency.QuadPart == 0) {
+        VmLog("WARNING: Performance frequency is zero");
+        return g_BaselineTsc;
+    }
+    
     // Calculate elapsed time in ticks
     ULONG64 elapsedTicks = currentQpc.QuadPart - g_BaselineQpc.QuadPart;
     
@@ -154,6 +160,13 @@ NTSTATUS TimingNormalizationInitialize(void) {
     
     // Get performance counter frequency
     KeQueryPerformanceCounter(&g_PerformanceFrequency);
+    
+    // Validate frequency is non-zero
+    if (g_PerformanceFrequency.QuadPart == 0) {
+        VmLog("ERROR: Performance counter frequency is zero!");
+        return STATUS_UNSUCCESSFUL;
+    }
+    
     VmLog("Performance counter frequency: %llu Hz", g_PerformanceFrequency.QuadPart);
     
     // Establish baseline measurements
