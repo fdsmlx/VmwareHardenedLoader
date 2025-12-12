@@ -6,11 +6,13 @@
 #include <Availability.h>
 #include <libkern/libkern.h>
 #include <i386/limits.h>
+#elif defined(_KERNEL_MODE) || defined(CAPSTONE_WINKERNEL)
+#include "windows/winkernel_mm.h"
 #else
 #include <stdio.h>
 #include <limits.h>
-#endif
 #include <string.h>
+#endif
 
 #include <capstone/platform.h>
 

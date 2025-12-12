@@ -6,6 +6,8 @@
 
 #if defined(CAPSTONE_HAS_OSXKERNEL)
 #include <libkern/libkern.h>
+#elif defined(_KERNEL_MODE) || defined(CAPSTONE_WINKERNEL)
+#include "windows/winkernel_mm.h"
 #else
 #include <stddef.h>
 #include "include/capstone/capstone.h"

@@ -4,13 +4,21 @@
 #ifndef CAPSTONE_PLATFORM_H
 #define CAPSTONE_PLATFORM_H
 
+// Windows Kernel Mode - types already defined in winkernel_mm.h
+#if defined(_KERNEL_MODE) || defined(CAPSTONE_WINKERNEL)
+    // Types already defined in winkernel_mm.h - skip standard includes and type definitions
+    #ifndef _STDINT_TYPES_DEFINED
+    #define _STDINT_TYPES_DEFINED
+    #endif
+    // Skip the rest of type definitions for kernel mode - they're in winkernel_mm.h
+#else
 
 // handle C99 issue (for pre-2013 VisualStudio)
 #if !defined(__CYGWIN__) && !defined(__MINGW32__) && !defined(__MINGW64__) && (defined (WIN32) || defined (WIN64) || defined (_WIN32) || defined (_WIN64))
 // MSVC
 
 // stdbool.h
-#if (_MSC_VER < 1800) || defined(_KERNEL_MODE)
+#if (_MSC_VER < 1800)
 // this system does not have stdbool.h
 #ifndef __cplusplus
 typedef unsigned char bool;
@@ -119,4 +127,6 @@ typedef unsigned long long uint64_t;
 #include <inttypes.h>
 #endif  // defined(CAPSTONE_HAS_OSXKERNEL) || (defined(_MSC_VER) && (_MSC_VER <= 1700 || defined(_KERNEL_MODE)))
 
-#endif
+#endif  // _KERNEL_MODE / CAPSTONE_WINKERNEL check
+
+#endif  // CAPSTONE_PLATFORM_H
