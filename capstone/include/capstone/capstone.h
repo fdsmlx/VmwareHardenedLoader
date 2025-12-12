@@ -12,7 +12,7 @@ extern "C" {
 
 #if defined(CAPSTONE_HAS_OSXKERNEL)
 #include <libkern/libkern.h>
-#elif defined(_KERNEL_MODE) || defined(CAPSTONE_WINKERNEL) || defined(NTDDI_VERSION)
+#elif defined(_KERNEL_MODE) || defined(CAPSTONE_WINKERNEL)
 // Windows Kernel Mode - include compatibility header
 #include "../../windows/winkernel_mm.h"
 #else

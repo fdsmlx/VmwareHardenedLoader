@@ -29,7 +29,11 @@ typedef LONG_PTR          intptr_t;
 #endif
 
 #ifndef _SIZE_T_DEFINED
-typedef ULONG_PTR size_t;
+#ifndef _WIN64
+typedef unsigned int size_t;
+#else
+typedef unsigned __int64 size_t;
+#endif
 #define _SIZE_T_DEFINED
 #endif
 
@@ -97,7 +101,9 @@ int CAPSTONE_API cs_winkernel_vsnprintf(char *buffer, size_t count, const char *
 // ============================================
 // String functions (replace string.h)
 // ============================================
-// Note: RtlEqualMemory returns TRUE if equal, memcmp returns 0 if equal
+// Note: This is a simplified memcmp for kernel mode
+// It returns 0 if equal, non-zero otherwise (unlike standard memcmp which returns -1, 0, or 1)
+// This is sufficient for Capstone's usage which typically only checks for equality
 static __inline int cs_memcmp(const void *p1, const void *p2, size_t size) {
     return RtlEqualMemory(p1, p2, size) ? 0 : 1;
 }
@@ -123,6 +129,11 @@ static __inline size_t cs_strlen(const char *str) {
 // ============================================
 // I/O functions (replace stdio.h)
 // ============================================
+// WARNING: DbgPrint has different behavior than printf:
+// - It's only available in checked builds or with debugger attached
+// - Output goes to debugger, not console
+// - Format specifiers may differ from standard printf
+// These mappings are for basic debugging only
 #ifndef CS_WINKERNEL_NO_MACROS
 #define printf                      DbgPrint
 #define snprintf                    _snprintf
