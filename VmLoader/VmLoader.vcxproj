@@ -157,6 +157,28 @@
     <ClCompile Include="cs_driver_mm.c" />
     <ClCompile Include="kernel_stl.cpp" />
     <ClCompile Include="main.cpp" />
+    <ClCompile Include="CpuidMasking.cpp" />
+    <ClCompile Include="TimingNormalization.cpp" />
+    <ClCompile Include="BackdoorBlocking.cpp" />
+    <ClCompile Include="MsrInterception.cpp" />
+    <ClCompile Include="PciSpoofing.cpp" />
+    <ClCompile Include="GpuMasking.cpp" />
+    <ClCompile Include="DiskSpoofing.cpp" />
+    <ClCompile Include="ProcessHider.cpp" />
+    <ClCompile Include="MacSpoofing.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="Config.h" />
+    <ClInclude Include="Utils.h" />
+    <ClInclude Include="CpuidMasking.h" />
+    <ClInclude Include="TimingNormalization.h" />
+    <ClInclude Include="BackdoorBlocking.h" />
+    <ClInclude Include="MsrInterception.h" />
+    <ClInclude Include="PciSpoofing.h" />
+    <ClInclude Include="GpuMasking.h" />
+    <ClInclude Include="DiskSpoofing.h" />
+    <ClInclude Include="ProcessHider.h" />
+    <ClInclude Include="MacSpoofing.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
