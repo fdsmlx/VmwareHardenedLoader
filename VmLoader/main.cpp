@@ -3,12 +3,28 @@
 #include "kernel_stl.h"
 #include <set>
 
+// New anti-detection modules
+#include "Config.h"
+#include "Utils.h"
+#include "CpuidMasking.h"
+#include "TimingNormalization.h"
+#include "BackdoorBlocking.h"
+#include "MsrInterception.h"
+#include "PciSpoofing.h"
+#include "GpuMasking.h"
+#include "DiskSpoofing.h"
+#include "ProcessHider.h"
+#include "MacSpoofing.h"
+
 extern "C"
 {
 	PVOID g_NtosBase = NULL;
 	PVOID g_NtosEnd = NULL;
 	PVOID g_ExpFirmwareTableResource = NULL;
 	PVOID g_ExpFirmwareTableProviderListHead = NULL;
+
+	// Global module status tracking
+	VM_MODULE_STATUS g_ModuleStatus = { 0 };
 
 #define EX_FIELD_ADDRESS(Type, Base, Member) ((PUCHAR)Base + FIELD_OFFSET(Type, Member))
 #define EX_FOR_EACH_IN_LIST(_Type, _Link, _Head, _Current)                                             \
@@ -693,8 +709,34 @@ extern "C"
 			if (!find)
 				break;
 
-			memset(find, '7', SigLength);
+			// Use realistic replacement values instead of "7777777"
+			memset(find, ' ', SigLength);  // Fill with spaces first
 			search_begin = (PUCHAR)find + SigLength;
+			search_size = (PUCHAR)FirmwareBuffer + FirmwareBufferLength - search_begin;
+		}
+	}
+
+	// Enhanced replacement with realistic values
+	VOID ReplaceSigsRealistic(PVOID FirmwareBuffer, ULONG FirmwareBufferLength, 
+	                          const char *OldSig, size_t OldSigLength,
+	                          const char *NewSig, size_t NewSigLength)
+	{
+		PUCHAR search_begin = (PUCHAR)FirmwareBuffer;
+		SIZE_T search_size = FirmwareBufferLength;
+		while (1)
+		{
+			auto find = UtilMemMem(search_begin, search_size, OldSig, OldSigLength);
+			if (!find)
+				break;
+
+			// Replace with new signature (pad with spaces if needed)
+			SIZE_T copyLen = (OldSigLength < NewSigLength) ? OldSigLength : NewSigLength;
+			memcpy(find, NewSig, copyLen);
+			if (copyLen < OldSigLength) {
+				memset((PUCHAR)find + copyLen, ' ', OldSigLength - copyLen);
+			}
+			
+			search_begin = (PUCHAR)find + OldSigLength;
 			search_size = (PUCHAR)FirmwareBuffer + FirmwareBufferLength - search_begin;
 		}
 	}
@@ -709,8 +751,11 @@ extern "C"
 
 		if (st == STATUS_SUCCESS && SystemFirmwareTableInfo->Action == 1)
 		{
-			RemoveSigs(SystemFirmwareTableInfo->TableBuffer, SystemFirmwareTableInfo->TableBufferLength, "VMware", sizeof("VMware") - 1);
-			RemoveSigs(SystemFirmwareTableInfo->TableBuffer, SystemFirmwareTableInfo->TableBufferLength, "Virtual", sizeof("Virtual") - 1);
+			// Replace VMware signatures with realistic hardware identifiers
+			ReplaceSigsRealistic(SystemFirmwareTableInfo->TableBuffer, SystemFirmwareTableInfo->TableBufferLength, 
+			                     "VMware", sizeof("VMware") - 1, SMBIOS_MANUFACTURER, sizeof(SMBIOS_MANUFACTURER) - 1);
+			ReplaceSigsRealistic(SystemFirmwareTableInfo->TableBuffer, SystemFirmwareTableInfo->TableBufferLength,
+			                     "Virtual", sizeof("Virtual") - 1, "Physical", sizeof("Physical") - 1);
 		}
 
 		return st;
@@ -726,8 +771,11 @@ extern "C"
 
 		if (st == STATUS_SUCCESS && SystemFirmwareTableInfo->Action == 1)
 		{
-			RemoveSigs(SystemFirmwareTableInfo->TableBuffer, SystemFirmwareTableInfo->TableBufferLength, "VMware", sizeof("VMware") - 1);
-			RemoveSigs(SystemFirmwareTableInfo->TableBuffer, SystemFirmwareTableInfo->TableBufferLength, "VMWARE", sizeof("VMWARE") - 1);
+			// Replace VMware signatures with realistic values
+			ReplaceSigsRealistic(SystemFirmwareTableInfo->TableBuffer, SystemFirmwareTableInfo->TableBufferLength,
+			                     "VMware", sizeof("VMware") - 1, "DELL  ", sizeof("DELL  ") - 1);
+			ReplaceSigsRealistic(SystemFirmwareTableInfo->TableBuffer, SystemFirmwareTableInfo->TableBufferLength,
+			                     "VMWARE", sizeof("VMWARE") - 1, "DELL  ", sizeof("DELL  ") - 1);
 		}
 		
 		return st;
@@ -743,8 +791,11 @@ extern "C"
 
 		if (st == STATUS_SUCCESS && SystemFirmwareTableInfo->Action == 1)
 		{
-			RemoveSigs(SystemFirmwareTableInfo->TableBuffer, SystemFirmwareTableInfo->TableBufferLength, "VMware", sizeof("VMware") - 1);
-			RemoveSigs(SystemFirmwareTableInfo->TableBuffer, SystemFirmwareTableInfo->TableBufferLength, "VMWARE", sizeof("VMWARE") - 1);
+			// Replace VMware signatures with realistic hardware manufacturers
+			ReplaceSigsRealistic(SystemFirmwareTableInfo->TableBuffer, SystemFirmwareTableInfo->TableBufferLength,
+			                     "VMware", sizeof("VMware") - 1, SMBIOS_MANUFACTURER, sizeof(SMBIOS_MANUFACTURER) - 1);
+			ReplaceSigsRealistic(SystemFirmwareTableInfo->TableBuffer, SystemFirmwareTableInfo->TableBufferLength,
+			                     "VMWARE", sizeof("VMWARE") - 1, "DELL  ", sizeof("DELL  ") - 1);
 		}
 
 		return st;
@@ -755,6 +806,20 @@ extern "C"
 		UNREFERENCED_PARAMETER(driver_object);
 		PAGED_CODE();
 
+		VmLog("VmLoader driver unloading...");
+
+		// Cleanup new anti-detection modules
+		MacSpoofingCleanup();
+		ProcessHiderCleanup();
+		DiskSpoofingCleanup();
+		GpuMaskingCleanup();
+		PciSpoofingCleanup();
+		MsrInterceptionCleanup();
+		BackdoorBlockingCleanup();
+		TimingNormalizationCleanup();
+		CpuidMaskingCleanup();
+
+		// Restore original SMBIOS/ACPI handlers
 		ExAcquireResourceExclusiveLite((PERESOURCE)g_ExpFirmwareTableResource, TRUE);
 
 		PSYSTEM_FIRMWARE_TABLE_HANDLER_NODE HandlerListCurrent = NULL;
@@ -781,12 +846,38 @@ extern "C"
 		}
 
 		ExReleaseResourceLite((PERESOURCE)g_ExpFirmwareTableResource);
+		
+		VmLog("VmLoader driver unloaded successfully");
 	}
 
 	_Use_decl_annotations_ NTSTATUS DriverEntry(PDRIVER_OBJECT driver_object,
 		PUNICODE_STRING registry_path) {
 		UNREFERENCED_PARAMETER(registry_path);
 		PAGED_CODE();
+
+		DbgPrintEx(DPFLTR_DEFAULT_ID, DPFLTR_ERROR_LEVEL, "\n");
+		DbgPrintEx(DPFLTR_DEFAULT_ID, DPFLTR_ERROR_LEVEL, "===========================================\n");
+		DbgPrintEx(DPFLTR_DEFAULT_ID, DPFLTR_ERROR_LEVEL, "  VMware Hardened Loader - Modernized\n");
+		DbgPrintEx(DPFLTR_DEFAULT_ID, DPFLTR_ERROR_LEVEL, "  Multi-Layer Anti-Detection System\n");
+		DbgPrintEx(DPFLTR_DEFAULT_ID, DPFLTR_ERROR_LEVEL, "===========================================\n");
+
+		// Detect Windows version
+		VM_OS_VERSION osVersion;
+		NTSTATUS status = VmGetOsVersion(&osVersion);
+		if (NT_SUCCESS(status)) {
+			VmLog("Windows Build: %lu", osVersion.BuildNumber);
+			if (osVersion.IsWindows11) {
+				VmLog("Operating System: Windows 11");
+			} else if (osVersion.IsWindows10) {
+				VmLog("Operating System: Windows 10");
+			} else if (osVersion.IsWindows8) {
+				VmLog("Operating System: Windows 8/8.1");
+			} else if (osVersion.IsWindows7) {
+				VmLog("Operating System: Windows 7");
+			} else if (osVersion.IsVista) {
+				VmLog("Operating System: Windows Vista");
+			}
+		}
 
 		cs_driver_mm_init();
 
@@ -886,6 +977,94 @@ extern "C"
 		}
 
 		ExReleaseResourceLite((PERESOURCE)g_ExpFirmwareTableResource);
+
+		// Initialize new anti-detection modules
+		VmLog("Initializing anti-detection modules...");
+		
+		status = CpuidMaskingInitialize();
+		if (NT_SUCCESS(status)) {
+			g_ModuleStatus.CpuidMaskingEnabled = TRUE;
+			VmLog("[OK] CPUID Masking initialized");
+		} else {
+			VmLog("[WARN] CPUID Masking initialization failed: 0x%08X", status);
+		}
+
+		status = TimingNormalizationInitialize();
+		if (NT_SUCCESS(status)) {
+			g_ModuleStatus.TimingNormalizationEnabled = TRUE;
+			VmLog("[OK] Timing Normalization initialized");
+		} else {
+			VmLog("[WARN] Timing Normalization initialization failed: 0x%08X", status);
+		}
+
+		status = BackdoorBlockingInitialize();
+		if (NT_SUCCESS(status)) {
+			g_ModuleStatus.BackdoorBlockingEnabled = TRUE;
+			VmLog("[OK] Backdoor Blocking initialized");
+		} else {
+			VmLog("[WARN] Backdoor Blocking initialization failed: 0x%08X", status);
+		}
+
+		status = MsrInterceptionInitialize();
+		if (NT_SUCCESS(status)) {
+			g_ModuleStatus.MsrInterceptionEnabled = TRUE;
+			VmLog("[OK] MSR Interception initialized");
+		} else {
+			VmLog("[WARN] MSR Interception initialization failed: 0x%08X", status);
+		}
+
+		status = PciSpoofingInitialize();
+		if (NT_SUCCESS(status)) {
+			g_ModuleStatus.PciSpoofingEnabled = TRUE;
+			VmLog("[OK] PCI Spoofing initialized");
+		} else {
+			VmLog("[WARN] PCI Spoofing initialization failed: 0x%08X", status);
+		}
+
+		status = GpuMaskingInitialize();
+		if (NT_SUCCESS(status)) {
+			g_ModuleStatus.GpuMaskingEnabled = TRUE;
+			VmLog("[OK] GPU Masking initialized");
+		} else {
+			VmLog("[WARN] GPU Masking initialization failed: 0x%08X", status);
+		}
+
+		status = DiskSpoofingInitialize();
+		if (NT_SUCCESS(status)) {
+			g_ModuleStatus.DiskSpoofingEnabled = TRUE;
+			VmLog("[OK] Disk Spoofing initialized");
+		} else {
+			VmLog("[WARN] Disk Spoofing initialization failed: 0x%08X", status);
+		}
+
+		status = ProcessHiderInitialize();
+		if (NT_SUCCESS(status)) {
+			g_ModuleStatus.ProcessHidingEnabled = TRUE;
+			VmLog("[OK] Process Hiding initialized");
+		} else {
+			VmLog("[WARN] Process Hiding initialization failed: 0x%08X", status);
+		}
+
+		status = MacSpoofingInitialize();
+		if (NT_SUCCESS(status)) {
+			g_ModuleStatus.MacSpoofingEnabled = TRUE;
+			VmLog("[OK] MAC Spoofing initialized");
+		} else {
+			VmLog("[WARN] MAC Spoofing initialization failed: 0x%08X", status);
+		}
+
+		g_ModuleStatus.SmbiosSpoofingEnabled = TRUE;
+		VmLog("[OK] SMBIOS/ACPI Spoofing initialized (enhanced)");
+
+		VmLog("===========================================");
+		VmLog("VmLoader initialized successfully!");
+		VmLog("Active modules: %d/%d", 
+			g_ModuleStatus.CpuidMaskingEnabled + g_ModuleStatus.TimingNormalizationEnabled +
+			g_ModuleStatus.BackdoorBlockingEnabled + g_ModuleStatus.MsrInterceptionEnabled +
+			g_ModuleStatus.PciSpoofingEnabled + g_ModuleStatus.GpuMaskingEnabled +
+			g_ModuleStatus.DiskSpoofingEnabled + g_ModuleStatus.ProcessHidingEnabled +
+			g_ModuleStatus.MacSpoofingEnabled + g_ModuleStatus.SmbiosSpoofingEnabled, 10);
+		VmLog("===========================================");
 
 		driver_object->DriverUnload = DriverUnload;
 	
