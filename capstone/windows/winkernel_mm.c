@@ -1,6 +1,7 @@
 /* Capstone Disassembly Engine */
 /* By Satoshi Tanda <tanda.sat@gmail.com>, 2016 */
 
+#define CS_WINKERNEL_NO_MACROS
 #include "winkernel_mm.h"
 #include <ntddk.h>
 #include <Ntintsafe.h>
@@ -62,7 +63,8 @@ void * CAPSTONE_API cs_winkernel_calloc(size_t n, size_t size)
 		return NULL;
 	}
 
-	return RtlFillMemory(new_ptr, total, 0);
+	RtlFillMemory(new_ptr, total, 0);
+	return new_ptr;
 }
 
 // realloc()

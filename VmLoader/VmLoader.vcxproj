@@ -138,6 +138,7 @@
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <ClCompile>
       <AdditionalIncludeDirectories>../capstone/include/capstone/;$(IntDir);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>_KERNEL_MODE;CAPSTONE_WINKERNEL;CAPSTONE_USE_SYS_DYN_MEM;CAPSTONE_DIET;CAPSTONE_X86_ATT_DISABLE;CAPSTONE_HAS_X86;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ClCompile>
     <Link>
       <AdditionalLibraryDirectories>..\x64\Release\</AdditionalLibraryDirectories>

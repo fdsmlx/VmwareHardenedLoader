@@ -7,11 +7,15 @@
 #include <Availability.h>
 #endif
 
+#if defined(_KERNEL_MODE) || defined(CAPSTONE_WINKERNEL)
+#include "../../windows/winkernel_mm.h"
+#else
 #include <string.h>
 #ifndef CAPSTONE_HAS_OSXKERNEL
 #include <stdlib.h>
 #else
 #include "qsort.h"
+#endif
 #endif
 
 #include "X86Mapping.h"

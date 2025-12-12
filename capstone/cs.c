@@ -13,7 +13,9 @@
 #include <stdlib.h>
 #endif
 
+#if !defined(_KERNEL_MODE) && !defined(CAPSTONE_WINKERNEL)
 #include <string.h>
+#endif
 #include <capstone/capstone.h>
 
 #include "utils.h"

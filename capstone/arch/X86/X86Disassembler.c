@@ -30,7 +30,9 @@
 #include <Availability.h>
 #endif
 
+#if !defined(_KERNEL_MODE) && !defined(CAPSTONE_WINKERNEL) && !defined(CAPSTONE_HAS_OSXKERNEL)
 #include <string.h>
+#endif
 
 #include "../../cs_priv.h"
 

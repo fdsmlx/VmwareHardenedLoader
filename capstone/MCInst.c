@@ -4,11 +4,13 @@
 #if defined(CAPSTONE_HAS_OSXKERNEL)
 #include <Availability.h>
 #include <libkern/libkern.h>
+#elif defined(_KERNEL_MODE) || defined(CAPSTONE_WINKERNEL)
+#include "windows/winkernel_mm.h"
 #else
 #include <stdio.h>
 #include <stdlib.h>
-#endif
 #include <string.h>
+#endif
 
 #include "MCInst.h"
 #include "utils.h"
