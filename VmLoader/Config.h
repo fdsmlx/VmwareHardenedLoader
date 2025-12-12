@@ -17,6 +17,15 @@
 #define ENABLE_PROCESS_HIDING       1  // VMware process hiding
 #define ENABLE_MAC_SPOOFING         1  // MAC address randomization
 #define ENABLE_SMBIOS_SPOOFING      1  // Enhanced SMBIOS/ACPI spoofing
+#define ENABLE_REGISTRY_CLEANING    1  // Registry artifacts cleaning
+#define ENABLE_DRIVER_HIDING        1  // Driver/module hiding
+#define ENABLE_WMI_INTERCEPTION     1  // WMI query interception
+#define ENABLE_MEMORY_CLEANING      1  // Memory artifacts cleaning
+#define ENABLE_HYPERVISOR_HIDING    1  // Hypervisor string removal
+#define ENABLE_ANTI_INSTRUMENTATION 1  // Anti-debugging/instrumentation
+
+// Total number of anti-detection modules
+#define TOTAL_MODULE_COUNT          16
 
 // Debug Options
 #define VMLOADER_DEBUG_OUTPUT       1  // Enable debug prints

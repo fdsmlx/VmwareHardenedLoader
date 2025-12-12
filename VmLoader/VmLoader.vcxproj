@@ -166,6 +166,12 @@
     <ClCompile Include="DiskSpoofing.cpp" />
     <ClCompile Include="ProcessHider.cpp" />
     <ClCompile Include="MacSpoofing.cpp" />
+    <ClCompile Include="RegistryCleaner.cpp" />
+    <ClCompile Include="DriverHider.cpp" />
+    <ClCompile Include="WmiInterception.cpp" />
+    <ClCompile Include="MemoryCleaner.cpp" />
+    <ClCompile Include="HypervisorHider.cpp" />
+    <ClCompile Include="AntiInstrumentation.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Config.h" />
@@ -179,6 +185,12 @@
     <ClInclude Include="DiskSpoofing.h" />
     <ClInclude Include="ProcessHider.h" />
     <ClInclude Include="MacSpoofing.h" />
+    <ClInclude Include="RegistryCleaner.h" />
+    <ClInclude Include="DriverHider.h" />
+    <ClInclude Include="WmiInterception.h" />
+    <ClInclude Include="MemoryCleaner.h" />
+    <ClInclude Include="HypervisorHider.h" />
+    <ClInclude Include="AntiInstrumentation.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

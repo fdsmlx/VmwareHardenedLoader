@@ -235,6 +235,12 @@ typedef struct _VM_MODULE_STATUS {
     BOOLEAN ProcessHidingEnabled;
     BOOLEAN MacSpoofingEnabled;
     BOOLEAN SmbiosSpoofingEnabled;
+    BOOLEAN RegistryCleaningEnabled;
+    BOOLEAN DriverHidingEnabled;
+    BOOLEAN WmiInterceptionEnabled;
+    BOOLEAN MemoryCleaningEnabled;
+    BOOLEAN HypervisorHidingEnabled;
+    BOOLEAN AntiInstrumentationEnabled;
 } VM_MODULE_STATUS, *PVM_MODULE_STATUS;
 
 // Global module status (defined in main.cpp)

@@ -15,6 +15,12 @@
 #include "DiskSpoofing.h"
 #include "ProcessHider.h"
 #include "MacSpoofing.h"
+#include "RegistryCleaner.h"
+#include "DriverHider.h"
+#include "WmiInterception.h"
+#include "MemoryCleaner.h"
+#include "HypervisorHider.h"
+#include "AntiInstrumentation.h"
 
 extern "C"
 {
@@ -808,7 +814,13 @@ extern "C"
 
 		VmLog("VmLoader driver unloading...");
 
-		// Cleanup new anti-detection modules
+		// Cleanup all anti-detection modules in reverse order
+		AntiInstrumentationCleanup();
+		HypervisorHiderCleanup();
+		MemoryCleanerCleanup();
+		WmiInterceptionCleanup();
+		DriverHiderCleanup();
+		RegistryCleanerCleanup();
 		MacSpoofingCleanup();
 		ProcessHiderCleanup();
 		DiskSpoofingCleanup();
@@ -1053,17 +1065,79 @@ extern "C"
 			VmLog("[WARN] MAC Spoofing initialization failed: 0x%08X", status);
 		}
 
+		status = RegistryCleanerInitialize();
+		if (NT_SUCCESS(status)) {
+			g_ModuleStatus.RegistryCleaningEnabled = TRUE;
+			VmLog("[OK] Registry Cleaner initialized");
+		} else {
+			VmLog("[WARN] Registry Cleaner initialization failed: 0x%08X", status);
+		}
+
+		status = DriverHiderInitialize();
+		if (NT_SUCCESS(status)) {
+			g_ModuleStatus.DriverHidingEnabled = TRUE;
+			VmLog("[OK] Driver Hider initialized");
+		} else {
+			VmLog("[WARN] Driver Hider initialization failed: 0x%08X", status);
+		}
+
+		status = WmiInterceptionInitialize();
+		if (NT_SUCCESS(status)) {
+			g_ModuleStatus.WmiInterceptionEnabled = TRUE;
+			VmLog("[OK] WMI Interception initialized");
+		} else {
+			VmLog("[WARN] WMI Interception initialization failed: 0x%08X", status);
+		}
+
+		status = MemoryCleanerInitialize();
+		if (NT_SUCCESS(status)) {
+			g_ModuleStatus.MemoryCleaningEnabled = TRUE;
+			VmLog("[OK] Memory Cleaner initialized");
+		} else {
+			VmLog("[WARN] Memory Cleaner initialization failed: 0x%08X", status);
+		}
+
+		status = HypervisorHiderInitialize();
+		if (NT_SUCCESS(status)) {
+			g_ModuleStatus.HypervisorHidingEnabled = TRUE;
+			VmLog("[OK] Hypervisor Hider initialized");
+		} else {
+			VmLog("[WARN] Hypervisor Hider initialization failed: 0x%08X", status);
+		}
+
+		status = AntiInstrumentationInitialize();
+		if (NT_SUCCESS(status)) {
+			g_ModuleStatus.AntiInstrumentationEnabled = TRUE;
+			VmLog("[OK] Anti-Instrumentation initialized");
+		} else {
+			VmLog("[WARN] Anti-Instrumentation initialization failed: 0x%08X", status);
+		}
+
 		g_ModuleStatus.SmbiosSpoofingEnabled = TRUE;
 		VmLog("[OK] SMBIOS/ACPI Spoofing initialized (enhanced)");
 
+		// Calculate total active modules
+		int activeModules = 
+			g_ModuleStatus.CpuidMaskingEnabled + 
+			g_ModuleStatus.TimingNormalizationEnabled +
+			g_ModuleStatus.BackdoorBlockingEnabled + 
+			g_ModuleStatus.MsrInterceptionEnabled +
+			g_ModuleStatus.PciSpoofingEnabled + 
+			g_ModuleStatus.GpuMaskingEnabled +
+			g_ModuleStatus.DiskSpoofingEnabled + 
+			g_ModuleStatus.ProcessHidingEnabled +
+			g_ModuleStatus.MacSpoofingEnabled + 
+			g_ModuleStatus.SmbiosSpoofingEnabled +
+			g_ModuleStatus.RegistryCleaningEnabled +
+			g_ModuleStatus.DriverHidingEnabled +
+			g_ModuleStatus.WmiInterceptionEnabled +
+			g_ModuleStatus.MemoryCleaningEnabled +
+			g_ModuleStatus.HypervisorHidingEnabled +
+			g_ModuleStatus.AntiInstrumentationEnabled;
+
 		VmLog("===========================================");
 		VmLog("VmLoader initialized successfully!");
-		VmLog("Active modules: %d/%d", 
-			g_ModuleStatus.CpuidMaskingEnabled + g_ModuleStatus.TimingNormalizationEnabled +
-			g_ModuleStatus.BackdoorBlockingEnabled + g_ModuleStatus.MsrInterceptionEnabled +
-			g_ModuleStatus.PciSpoofingEnabled + g_ModuleStatus.GpuMaskingEnabled +
-			g_ModuleStatus.DiskSpoofingEnabled + g_ModuleStatus.ProcessHidingEnabled +
-			g_ModuleStatus.MacSpoofingEnabled + g_ModuleStatus.SmbiosSpoofingEnabled, 10);
+		VmLog("Active modules: %d/%d", activeModules, TOTAL_MODULE_COUNT);
 		VmLog("===========================================");
 
 		driver_object->DriverUnload = DriverUnload;
