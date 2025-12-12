@@ -1,5 +1,6 @@
 #include <ntddk.h>
 #include <wdm.h>
+#include <ntstrsafe.h>
 #include "PciSpoofing.h"
 #include "Config.h"
 #include "Utils.h"

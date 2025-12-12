@@ -3,6 +3,9 @@
 #include "Config.h"
 #include "Utils.h"
 
+// External kernel variables
+extern POBJECT_TYPE *PsThreadType;
+
 // Memory Cleaner Module - Scans and cleans VMware artifacts from kernel memory
 // Periodically scans NonPagedPool for VMware strings and cleans them
 

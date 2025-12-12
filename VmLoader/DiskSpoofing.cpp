@@ -5,6 +5,9 @@
 #include "Config.h"
 #include "Utils.h"
 
+// External kernel variables
+extern POBJECT_TYPE *IoDriverObjectType;
+
 // Disk Spoofing Module - Active IOCTL Interception
 // This module intercepts disk-related IOCTLs and replaces VMware signatures
 // with realistic hardware identifiers

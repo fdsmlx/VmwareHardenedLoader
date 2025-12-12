@@ -42,7 +42,7 @@ static BOOLEAN ContainsVMwareRegistry(PVOID data, ULONG dataSize) {
 }
 
 // Replace VMware strings in registry data
-static VOID SpoofRegistryData(PVOID data, ULONG dataSize, REG_VALUE_TYPE type) {
+static VOID SpoofRegistryData(PVOID data, ULONG dataSize, ULONG type) {
     if (!data || dataSize == 0) return;
     
     if (type == REG_SZ || type == REG_EXPAND_SZ || type == REG_MULTI_SZ) {
@@ -102,7 +102,7 @@ static NTSTATUS RegistryCallback(
                 (PREG_QUERY_VALUE_KEY_INFORMATION)postInfo->PreInformation;
             
             if (queryInfo && queryInfo->Type) {
-                REG_VALUE_TYPE type = *queryInfo->Type;
+                ULONG type = *queryInfo->Type;
                 
                 if (queryInfo->Data && queryInfo->DataSize) {
                     __try {
