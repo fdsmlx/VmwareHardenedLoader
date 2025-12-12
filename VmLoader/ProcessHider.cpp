@@ -81,14 +81,18 @@ static BOOLEAN ShouldHideProcess(PUNICODE_STRING processName) {
         SIZE_T hiddenLen = VmWideStringLength(g_HiddenProcesses[i]);
         SIZE_T processLen = processName->Length / sizeof(WCHAR);
         
-        if (hiddenLen != processLen) {
+        // Check if process name ends with the hidden process name
+        // This handles full paths like "C:\Program Files\VMware\vmtoolsd.exe"
+        if (processLen < hiddenLen) {
             continue;
         }
         
-        // Case-insensitive comparison
+        // Compare from the end of the process name
+        SIZE_T startPos = processLen - hiddenLen;
         BOOLEAN match = TRUE;
+        
         for (SIZE_T j = 0; j < hiddenLen; j++) {
-            WCHAR c1 = processName->Buffer[j];
+            WCHAR c1 = processName->Buffer[startPos + j];
             WCHAR c2 = g_HiddenProcesses[i][j];
             
             // Convert to lowercase for comparison

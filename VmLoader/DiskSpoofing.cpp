@@ -6,7 +6,7 @@
 #include "Utils.h"
 
 // External kernel variables
-extern POBJECT_TYPE *IoDriverObjectType;
+extern POBJECT_TYPE IoDriverObjectType;
 
 // Disk Spoofing Module - Active IOCTL Interception
 // This module intercepts disk-related IOCTLs and replaces VMware signatures
@@ -96,7 +96,9 @@ static BOOLEAN ContainsVMwareSignature(const CHAR* str, SIZE_T maxLen) {
         SIZE_T sigLen = 0;
         while (signatures[i][sigLen]) sigLen++;
         
-        for (SIZE_T j = 0; j < maxLen - sigLen; j++) {
+        if (maxLen < sigLen) continue;  // Skip if buffer too small
+        
+        for (SIZE_T j = 0; j <= maxLen - sigLen; j++) {
             if (RtlCompareMemory(&str[j], signatures[i], sigLen) == sigLen) {
                 return TRUE;
             }

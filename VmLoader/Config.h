@@ -24,6 +24,9 @@
 #define ENABLE_HYPERVISOR_HIDING    1  // Hypervisor string removal
 #define ENABLE_ANTI_INSTRUMENTATION 1  // Anti-debugging/instrumentation
 
+// Total number of anti-detection modules
+#define TOTAL_MODULE_COUNT          16
+
 // Debug Options
 #define VMLOADER_DEBUG_OUTPUT       1  // Enable debug prints
 #define VMLOADER_TAG                'LMV' // Pool tag for memory allocations

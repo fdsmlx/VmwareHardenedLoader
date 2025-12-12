@@ -1137,7 +1137,7 @@ extern "C"
 
 		VmLog("===========================================");
 		VmLog("VmLoader initialized successfully!");
-		VmLog("Active modules: %d/16", activeModules);
+		VmLog("Active modules: %d/%d", activeModules, TOTAL_MODULE_COUNT);
 		VmLog("===========================================");
 
 		driver_object->DriverUnload = DriverUnload;

@@ -31,7 +31,9 @@ static BOOLEAN ContainsVMwareRegistry(PVOID data, ULONG dataSize) {
     for (SIZE_T i = 0; g_VMwareStrings[i] != NULL; i++) {
         SIZE_T sigLen = VmWideStringLength(g_VMwareStrings[i]);
         
-        for (SIZE_T j = 0; j < wideLen - sigLen; j++) {
+        if (wideLen < sigLen) continue;  // Skip if buffer too small
+        
+        for (SIZE_T j = 0; j <= wideLen - sigLen; j++) {
             if (RtlCompareMemory(&wideData[j], g_VMwareStrings[i], sigLen * sizeof(WCHAR)) == sigLen * sizeof(WCHAR)) {
                 return TRUE;
             }

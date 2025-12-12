@@ -36,7 +36,9 @@ static BOOLEAN ContainsVMwareGPU(const WCHAR* str, SIZE_T maxLen) {
     for (SIZE_T i = 0; g_VMwareGPUStrings[i] != NULL; i++) {
         SIZE_T sigLen = VmWideStringLength(g_VMwareGPUStrings[i]);
         
-        for (SIZE_T j = 0; j < maxLen - sigLen; j++) {
+        if (maxLen < sigLen) continue;  // Skip if buffer too small
+        
+        for (SIZE_T j = 0; j <= maxLen - sigLen; j++) {
             if (RtlCompareMemory(&str[j], g_VMwareGPUStrings[i], sigLen * sizeof(WCHAR)) == sigLen * sizeof(WCHAR)) {
                 return TRUE;
             }
