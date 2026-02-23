@@ -128,82 +128,61 @@ static VOID SpoofStorageDescriptor(PSTORAGE_DEVICE_DESCRIPTOR descriptor, ULONG 
     }
 }
 
-// IRP completion routine for storage queries
-static NTSTATUS DiskSpoofingCompletionRoutine(
-    _In_ PDEVICE_OBJECT DeviceObject,
-    _In_ PIRP Irp,
-    _In_reads_opt_(_Inexpressible_("varies")) PVOID Context
-) {
-    UNREFERENCED_PARAMETER(DeviceObject);
-    
-    if (Irp->PendingReturned) {
-        IoMarkIrpPending(Irp);
-    }
-    
-    PIO_STACK_LOCATION ioStack = IoGetCurrentIrpStackLocation(Irp);
-    
-    // Check if this is a successful IOCTL_STORAGE_QUERY_PROPERTY
-    if (NT_SUCCESS(Irp->IoStatus.Status) &&
-        ioStack->Parameters.DeviceIoControl.IoControlCode == IOCTL_STORAGE_QUERY_PROPERTY) {
-        
-        PSTORAGE_PROPERTY_QUERY query = (PSTORAGE_PROPERTY_QUERY)Irp->AssociatedIrp.SystemBuffer;
-        
-        if (query && query->PropertyId == StorageDeviceProperty && 
-            query->QueryType == PropertyStandardQuery) {
-            
-            PSTORAGE_DEVICE_DESCRIPTOR descriptor = (PSTORAGE_DEVICE_DESCRIPTOR)Irp->AssociatedIrp.SystemBuffer;
-            
-            if (descriptor && descriptor->Size >= sizeof(STORAGE_DEVICE_DESCRIPTOR)) {
-                ULONG seed = VmGetHardwareSeed();
-                SpoofStorageDescriptor(descriptor, seed);
-            }
-        }
-    }
-    
-    if (Context) {
-        KeSetEvent((PKEVENT)Context, IO_NO_INCREMENT, FALSE);
-    }
-    
-    return STATUS_SUCCESS;
-}
-
 // Hooked device control dispatch routine
 static NTSTATUS HookedDiskDispatch(
     _In_ PDEVICE_OBJECT DeviceObject,
     _In_ PIRP Irp
 ) {
+    if (!g_OriginalDiskDispatch) {
+        return STATUS_NOT_SUPPORTED;
+    }
+
     PIO_STACK_LOCATION ioStack = IoGetCurrentIrpStackLocation(Irp);
-    
-    // Only intercept IOCTL_STORAGE_QUERY_PROPERTY
-    if (ioStack->MajorFunction == IRP_MJ_DEVICE_CONTROL) {
-        ULONG ioControlCode = ioStack->Parameters.DeviceIoControl.IoControlCode;
-        
-        if (ioControlCode == IOCTL_STORAGE_QUERY_PROPERTY) {
-            // Set up completion routine to modify the response
-            KEVENT event;
-            KeInitializeEvent(&event, NotificationEvent, FALSE);
-            
-            IoCopyCurrentIrpStackLocationToNext(Irp);
-            IoSetCompletionRoutine(Irp, DiskSpoofingCompletionRoutine, 
-                                   &event, TRUE, TRUE, TRUE);
-            
-            NTSTATUS status = IoCallDriver(DeviceObject, Irp);
-            
-            if (status == STATUS_PENDING) {
-                KeWaitForSingleObject(&event, Executive, KernelMode, FALSE, NULL);
-                status = Irp->IoStatus.Status;
+    BOOLEAN shouldSpoofDescriptor = FALSE;
+
+    if (ioStack->MajorFunction == IRP_MJ_DEVICE_CONTROL &&
+        ioStack->Parameters.DeviceIoControl.IoControlCode == IOCTL_STORAGE_QUERY_PROPERTY &&
+        ioStack->Parameters.DeviceIoControl.InputBufferLength >= sizeof(STORAGE_PROPERTY_QUERY)) {
+        __try {
+            PSTORAGE_PROPERTY_QUERY query =
+                (PSTORAGE_PROPERTY_QUERY)Irp->AssociatedIrp.SystemBuffer;
+
+            if (query &&
+                query->PropertyId == StorageDeviceProperty &&
+                query->QueryType == PropertyStandardQuery) {
+                shouldSpoofDescriptor = TRUE;
             }
-            
-            return status;
+        } __except (EXCEPTION_EXECUTE_HANDLER) {
+            VmLog("[DiskSpoof] Exception reading IOCTL_STORAGE_QUERY_PROPERTY input");
         }
     }
-    
-    // Pass through to original handler
-    if (g_OriginalDiskDispatch) {
-        return g_OriginalDiskDispatch(DeviceObject, Irp);
+
+    // This is a dispatch hook, not an attached filter. Calling IoCallDriver with
+    // the same DeviceObject recursively re-enters this hook and can exhaust IRP
+    // stack locations (NO_MORE_IRP_STACK_LOCATIONS).
+    NTSTATUS status = g_OriginalDiskDispatch(DeviceObject, Irp);
+
+    // We can safely patch METHOD_BUFFERED output only for synchronous completion.
+    if (shouldSpoofDescriptor &&
+        status != STATUS_PENDING &&
+        NT_SUCCESS(status) &&
+        ioStack->Parameters.DeviceIoControl.OutputBufferLength >= sizeof(STORAGE_DEVICE_DESCRIPTOR)) {
+        __try {
+            PSTORAGE_DEVICE_DESCRIPTOR descriptor =
+                (PSTORAGE_DEVICE_DESCRIPTOR)Irp->AssociatedIrp.SystemBuffer;
+
+            if (descriptor &&
+                descriptor->Size >= sizeof(STORAGE_DEVICE_DESCRIPTOR) &&
+                descriptor->Size <= ioStack->Parameters.DeviceIoControl.OutputBufferLength) {
+                ULONG seed = VmGetHardwareSeed();
+                SpoofStorageDescriptor(descriptor, seed);
+            }
+        } __except (EXCEPTION_EXECUTE_HANDLER) {
+            VmLog("[DiskSpoof] Exception patching STORAGE_DEVICE_DESCRIPTOR");
+        }
     }
-    
-    return STATUS_NOT_SUPPORTED;
+
+    return status;
 }
 
 NTSTATUS DiskSpoofingInitialize(void) {

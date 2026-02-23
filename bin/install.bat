@@ -48,10 +48,22 @@ title VMware Hardened Loader Installation Script
  ::START
  ::::::::::::::::::::::::::::
 
-copy /Y "%~dp0vmloader.sys" "C:\vmloader.sys"
-sc create vmloader binPath= "\??\c:\vmloader.sys" type= "kernel" start= "system"
+copy /Y "%~dp0vmloader.sys" "C:\vmloader.sys" || goto installFailed
+sc stop vmloader >nul 2>nul
+sc delete vmloader >nul 2>nul
+sc create vmloader binPath= "\??\c:\vmloader.sys" type= "kernel" start= "demand"
+if errorlevel 1 goto installFailed
 sc start vmloader
+if errorlevel 1 goto installFailed
 reg delete "HKLM\HARDWARE\ACPI\DSDT\PTLTD_" /f
 echo Press any key to restart...
 pause > nul
 shutdown -r -t 00 -f
+goto :eof
+
+:installFailed
+echo.
+echo [ERROR] Failed to install or start vmloader service.
+echo Press any key to exit...
+pause > nul
+exit /B 1
