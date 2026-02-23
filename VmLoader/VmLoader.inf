@@ -4,29 +4,40 @@
 
 [Version]
 Signature="$WINDOWS NT$"
-Class=
-ClassGuid={bf798677-a0a7-4dcb-9d9a-76d706e009d6}
-Provider=hzqst
-DriverVer=123
+Class=System
+ClassGuid={4d36e97d-e325-11ce-bfc1-08002be10318}
+Provider=%ProviderName%
+DriverVer=02/22/2026,1.0.0.0
 CatalogFile=VmLoader.cat
+PnpLockdown=1
+
+; Primitive driver install section (no PnP hardware IDs)
+[DefaultInstall.NTamd64]
+CopyFiles=DriverCopyFiles
+
+[DefaultInstall.NTamd64.Services]
+AddService=VmLoader,0x00000002,ServiceInstall
+
+[ServiceInstall]
+DisplayName=%ServiceDesc%
+ServiceType=1
+StartType=3
+ErrorControl=1
+ServiceBinary=%13%\\VmLoader.sys
 
 [DestinationDirs]
-DefaultDestDir = 12
+DriverCopyFiles=13
 
+[DriverCopyFiles]
+VmLoader.sys
 
 [SourceDisksNames]
 1 = %DiskName%,,,""
 
 [SourceDisksFiles]
-
-
-[Manufacturer]
-%ManufacturerName%=Standard,NT$ARCH$
-
-[Standard.NT$ARCH$]
-
+VmLoader.sys = 1
 
 [Strings]
-ManufacturerName=""
-ClassName=""
+ProviderName="VmLoader"
+ServiceDesc="VmLoader Driver"
 DiskName="VmLoader Source Disk"

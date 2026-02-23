@@ -8,38 +8,6 @@
 
 static BOOLEAN g_AntiInstrumentationActive = FALSE;
 
-// ObRegisterCallbacks structure (simplified)
-typedef struct _OB_PRE_OPERATION_INFORMATION {
-    ULONG Operation;
-    union {
-        ULONG Flags;
-        struct {
-            ULONG KernelHandle:1;
-            ULONG Reserved:31;
-        };
-    };
-    PVOID Object;
-    ULONG ObjectType;
-    PVOID CallContext;
-    PVOID Parameters;
-} OB_PRE_OPERATION_INFORMATION, *POB_PRE_OPERATION_INFORMATION;
-
-typedef struct _OB_POST_OPERATION_INFORMATION {
-    ULONG Operation;
-    union {
-        ULONG Flags;
-        struct {
-            ULONG KernelHandle:1;
-            ULONG Reserved:31;
-        };
-    };
-    PVOID Object;
-    ULONG ObjectType;
-    PVOID CallContext;
-    NTSTATUS ReturnStatus;
-    PVOID Parameters;
-} OB_POST_OPERATION_INFORMATION, *POB_POST_OPERATION_INFORMATION;
-
 // Object callback registration handle
 static PVOID g_ObjectCallbackHandle = NULL;
 

@@ -34,6 +34,7 @@ typedef unsigned char bool;
 
 #if defined(_MSC_VER) && (_MSC_VER < 1600 || defined(_KERNEL_MODE))
 // this system does not have stdint.h
+#if !defined(CS_WINKERNEL_TYPES_DEFINED)
 typedef signed char  int8_t;
 typedef signed short int16_t;
 typedef signed int   int32_t;
@@ -42,6 +43,7 @@ typedef unsigned short uint16_t;
 typedef unsigned int   uint32_t;
 typedef signed long long   int64_t;
 typedef unsigned long long uint64_t;
+#endif
 
 #define INT8_MIN         (-127i8 - 1)
 #define INT16_MIN        (-32767i16 - 1)

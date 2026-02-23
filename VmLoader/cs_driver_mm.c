@@ -1,5 +1,6 @@
 #include "cs_driver_mm.h"
-#include <fltkernel.h>
+#include <ntddk.h>
+#include <wdm.h>
 
 // A pool tag for memory allocation
 static const ULONG CS_DRIVER_POOL_TAG = 'rdsC';
@@ -87,6 +88,7 @@ static void * CAPSTONE_API csdrv_realloc(void *ptr, size_t size)
 #pragma warning(disable : 28719)  // Banned API Usage : _vsnprintf is a Banned
                                   // API as listed in dontuse.h for security
                                   // purposes.
+extern int __cdecl _vsnprintf(char *buffer, size_t count, const char *format, va_list argptr);
 static int CAPSTONE_API csdrv_vsnprintf(char *buffer, size_t count,
   const char *format, va_list argptr)
 {

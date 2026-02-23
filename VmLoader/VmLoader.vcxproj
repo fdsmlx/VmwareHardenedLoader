@@ -66,7 +66,7 @@
     <DriverType>WDM</DriverType>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
-    <TargetVersion>Windows7</TargetVersion>
+    <TargetVersion>Windows10</TargetVersion>
     <UseDebugLibraries>false</UseDebugLibraries>
     <PlatformToolset>WindowsKernelModeDriver10.0</PlatformToolset>
     <ConfigurationType>Driver</ConfigurationType>
@@ -121,6 +121,8 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <DebuggerFlavor>DbgengKernelDebugger</DebuggerFlavor>
     <EnableInf2cat>false</EnableInf2cat>
+    <SkipPackageVerification>true</SkipPackageVerification>
+    <SignMode>Off</SignMode>
     <IncludePath>$(VC_IncludePath);$(ProjectDir);$(IncludePath)</IncludePath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|ARM'">
@@ -139,6 +141,7 @@
     <ClCompile>
       <AdditionalIncludeDirectories>../capstone/include/capstone/;$(IntDir);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>_KERNEL_MODE;CAPSTONE_WINKERNEL;CAPSTONE_USE_SYS_DYN_MEM;CAPSTONE_DIET;CAPSTONE_X86_ATT_DISABLE;CAPSTONE_HAS_X86;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <DisableSpecificWarnings>4005;4117;4996;4505;%(DisableSpecificWarnings)</DisableSpecificWarnings>
     </ClCompile>
     <Link>
       <AdditionalLibraryDirectories>..\x64\Release\</AdditionalLibraryDirectories>

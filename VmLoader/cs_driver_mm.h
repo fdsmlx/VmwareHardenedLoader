@@ -5,6 +5,7 @@
 extern "C" {
 #endif
 
+#define CS_WINKERNEL_NO_MACROS
 #include <capstone.h>
 
 /*

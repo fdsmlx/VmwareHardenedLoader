@@ -1,12 +1,22 @@
-#include <ntddk.h>
+#include <ntifs.h>
 #include <ntdddisk.h>
 #include <ntddscsi.h>
 #include "DiskSpoofing.h"
 #include "Config.h"
 #include "Utils.h"
 
-// External kernel variables
-extern POBJECT_TYPE IoDriverObjectType;
+// IoDriverObjectType is not guaranteed to be linkable; resolve it at runtime.
+static POBJECT_TYPE *g_IoDriverObjectType = NULL;
+extern "C" NTSTATUS ObReferenceObjectByName(
+    PUNICODE_STRING ObjectName,
+    ULONG Attributes,
+    PACCESS_STATE AccessState,
+    ACCESS_MASK DesiredAccess,
+    POBJECT_TYPE ObjectType,
+    KPROCESSOR_MODE AccessMode,
+    PVOID ParseContext,
+    PVOID *Object
+);
 
 // Disk Spoofing Module - Active IOCTL Interception
 // This module intercepts disk-related IOCTLs and replaces VMware signatures
@@ -15,48 +25,6 @@ extern POBJECT_TYPE IoDriverObjectType;
 static BOOLEAN g_DiskSpoofingActive = FALSE;
 static PDRIVER_DISPATCH g_OriginalDiskDispatch = NULL;
 static PDRIVER_OBJECT g_DiskDriverObject = NULL;
-
-// Storage property query structures
-typedef enum _STORAGE_PROPERTY_ID {
-    StorageDeviceProperty = 0,
-    StorageAdapterProperty = 1,
-    StorageDeviceIdProperty = 2,
-    StorageDeviceUniqueIdProperty = 3,
-    StorageDeviceWriteCacheProperty = 4,
-    StorageMiniportProperty = 5,
-    StorageAccessAlignmentProperty = 6,
-    StorageDeviceSeekPenaltyProperty = 7,
-    StorageDeviceTrimProperty = 8
-} STORAGE_PROPERTY_ID, *PSTORAGE_PROPERTY_ID;
-
-typedef enum _STORAGE_QUERY_TYPE {
-    PropertyStandardQuery = 0,
-    PropertyExistsQuery = 1,
-    PropertyMaskQuery = 2,
-    PropertyQueryMaxDefined = 3
-} STORAGE_QUERY_TYPE, *PSTORAGE_QUERY_TYPE;
-
-typedef struct _STORAGE_PROPERTY_QUERY {
-    STORAGE_PROPERTY_ID PropertyId;
-    STORAGE_QUERY_TYPE QueryType;
-    UCHAR AdditionalParameters[1];
-} STORAGE_PROPERTY_QUERY, *PSTORAGE_PROPERTY_QUERY;
-
-typedef struct _STORAGE_DEVICE_DESCRIPTOR {
-    ULONG Version;
-    ULONG Size;
-    UCHAR DeviceType;
-    UCHAR DeviceTypeModifier;
-    BOOLEAN RemovableMedia;
-    BOOLEAN CommandQueueing;
-    ULONG VendorIdOffset;
-    ULONG ProductIdOffset;
-    ULONG ProductRevisionOffset;
-    ULONG SerialNumberOffset;
-    ULONG BusType;
-    ULONG RawPropertiesLength;
-    UCHAR RawDeviceProperties[1];
-} STORAGE_DEVICE_DESCRIPTOR, *PSTORAGE_DEVICE_DESCRIPTOR;
 
 // Generate realistic disk serial number based on manufacturer
 static VOID GenerateDiskSerial(PCHAR buffer, SIZE_T bufferSize, ULONG seed) {
@@ -249,12 +217,22 @@ NTSTATUS DiskSpoofingInitialize(void) {
     UNICODE_STRING diskDriverName;
     RtlInitUnicodeString(&diskDriverName, L"\\Driver\\Disk");
     
+    if (!g_IoDriverObjectType) {
+        UNICODE_STRING routineName;
+        RtlInitUnicodeString(&routineName, L"IoDriverObjectType");
+        g_IoDriverObjectType = (POBJECT_TYPE*)MmGetSystemRoutineAddress(&routineName);
+        if (!g_IoDriverObjectType) {
+            VmLog("[DiskSpoof] IoDriverObjectType not found");
+            return STATUS_PROCEDURE_NOT_FOUND;
+        }
+    }
+
     NTSTATUS status = ObReferenceObjectByName(
         &diskDriverName,
         OBJ_CASE_INSENSITIVE | OBJ_KERNEL_HANDLE,
         NULL,
         0,
-        *IoDriverObjectType,
+        *g_IoDriverObjectType,
         KernelMode,
         NULL,
         (PVOID*)&g_DiskDriverObject

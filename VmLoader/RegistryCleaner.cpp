@@ -98,18 +98,21 @@ static NTSTATUS RegistryCallback(
     // Handle post-query operations to modify returned data
     if (notifyClass == RegNtPostQueryValueKey) {
         PREG_POST_OPERATION_INFORMATION postInfo = (PREG_POST_OPERATION_INFORMATION)Argument2;
-        
+
         if (NT_SUCCESS(postInfo->Status)) {
-            PREG_QUERY_VALUE_KEY_INFORMATION queryInfo = 
+            PREG_QUERY_VALUE_KEY_INFORMATION queryInfo =
                 (PREG_QUERY_VALUE_KEY_INFORMATION)postInfo->PreInformation;
-            
-            if (queryInfo && queryInfo->Type) {
-                ULONG type = *queryInfo->Type;
-                
-                if (queryInfo->Data && queryInfo->DataSize) {
+
+            if (queryInfo && queryInfo->KeyValueInformation) {
+                if (queryInfo->KeyValueInformationClass == KeyValuePartialInformation ||
+                    queryInfo->KeyValueInformationClass == KeyValuePartialInformationAlign64) {
+                    PKEY_VALUE_PARTIAL_INFORMATION kvInfo =
+                        (PKEY_VALUE_PARTIAL_INFORMATION)queryInfo->KeyValueInformation;
+
                     __try {
-                        if (ContainsVMwareRegistry(queryInfo->Data, *queryInfo->DataSize)) {
-                            SpoofRegistryData(queryInfo->Data, *queryInfo->DataSize, type);
+                        if (kvInfo->DataLength &&
+                            ContainsVMwareRegistry(kvInfo->Data, kvInfo->DataLength)) {
+                            SpoofRegistryData(kvInfo->Data, kvInfo->DataLength, kvInfo->Type);
                         }
                     } __except (EXCEPTION_EXECUTE_HANDLER) {
                         // Ignore exceptions

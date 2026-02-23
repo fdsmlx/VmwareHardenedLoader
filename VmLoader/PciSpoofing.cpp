@@ -1,5 +1,4 @@
 #include <ntddk.h>
-#include <wdm.h>
 #include <ntstrsafe.h>
 #include "PciSpoofing.h"
 #include "Config.h"
@@ -21,26 +20,6 @@ static BOOLEAN g_PciSpoofingActive = FALSE;
 #define INTEL_VENDOR_ID         0x8086
 #define NVIDIA_VENDOR_ID        0x10DE
 #define REALTEK_VENDOR_ID       0x10EC
-
-// Device property types
-typedef enum _DEVICE_REGISTRY_PROPERTY_EX {
-    DevicePropertyDeviceDescription = 0,
-    DevicePropertyHardwareID = 1,
-    DevicePropertyCompatibleIDs = 2,
-    DevicePropertyBootConfiguration = 3,
-    DevicePropertyBootConfigurationTranslated = 4,
-    DevicePropertyClassName = 5,
-    DevicePropertyClassGuid = 6,
-    DevicePropertyDriverKeyName = 7,
-    DevicePropertyManufacturer = 8,
-    DevicePropertyFriendlyName = 9,
-    DevicePropertyLocationInformation = 10,
-    DevicePropertyPhysicalDeviceObjectName = 11,
-    DevicePropertyBusTypeGuid = 12,
-    DevicePropertyLegacyBusType = 13,
-    DevicePropertyBusNumber = 14,
-    DevicePropertyEnumeratorName = 15
-} DEVICE_REGISTRY_PROPERTY_EX;
 
 // Function pointer type for IoGetDeviceProperty
 typedef NTSTATUS (*PFN_IO_GET_DEVICE_PROPERTY)(

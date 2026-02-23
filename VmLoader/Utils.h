@@ -7,6 +7,7 @@
 #define VMLOADER_UTILS_H
 
 #include <ntddk.h>
+#include <intrin.h>
 #include "Config.h"
 
 #ifdef __cplusplus

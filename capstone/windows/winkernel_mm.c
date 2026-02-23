@@ -6,6 +6,9 @@
 #include <ntddk.h>
 #include <Ntintsafe.h>
 
+// Kernel mode doesn't provide a standard prototype for _vsnprintf in all WDKs.
+extern int __cdecl _vsnprintf(char *buffer, size_t count, const char *format, va_list argptr);
+
 // A pool tag for memory allocation
 static const ULONG CS_WINKERNEL_POOL_TAG = 'kwsC';
 
@@ -128,3 +131,50 @@ int CAPSTONE_API cs_winkernel_vsnprintf(char *buffer, size_t count, const char *
 	return result;
 }
 #pragma warning(pop)
+
+static void cs_winkernel_swap_bytes(char *a, char *b, size_t size)
+{
+	while (size--) {
+		char t = *a;
+		*a++ = *b;
+		*b++ = t;
+	}
+}
+
+static void cs_winkernel_qsort_impl(char *base, ptrdiff_t left, ptrdiff_t right, size_t size,
+									cs_winkernel_qsort_compare_t cmp)
+{
+	ptrdiff_t i = left;
+	ptrdiff_t j = right;
+	char *pivot = base + ((left + right) / 2) * (ptrdiff_t)size;
+
+	while (i <= j) {
+		while (cmp(base + i * (ptrdiff_t)size, pivot) < 0) {
+			++i;
+		}
+		while (cmp(base + j * (ptrdiff_t)size, pivot) > 0) {
+			--j;
+		}
+		if (i <= j) {
+			cs_winkernel_swap_bytes(base + i * (ptrdiff_t)size, base + j * (ptrdiff_t)size, size);
+			++i;
+			--j;
+		}
+	}
+
+	if (left < j) {
+		cs_winkernel_qsort_impl(base, left, j, size, cmp);
+	}
+	if (i < right) {
+		cs_winkernel_qsort_impl(base, i, right, size, cmp);
+	}
+}
+
+void CAPSTONE_API cs_winkernel_qsort(void *base, size_t num, size_t size, cs_winkernel_qsort_compare_t cmp)
+{
+	if (!base || !cmp || num < 2 || size == 0) {
+		return;
+	}
+
+	cs_winkernel_qsort_impl((char *)base, 0, (ptrdiff_t)num - 1, size, cmp);
+}

@@ -27,15 +27,21 @@ typedef signed __int64    int64_t;
 typedef ULONG_PTR         uintptr_t;
 typedef LONG_PTR          intptr_t;
 #endif
-
-#ifndef _SIZE_T_DEFINED
-#ifndef _WIN64
-typedef unsigned int size_t;
-#else
-typedef unsigned __int64 size_t;
+#ifndef INT8_MIN
+#define INT8_MIN         (-127i8 - 1)
+#define INT16_MIN        (-32767i16 - 1)
+#define INT32_MIN        (-2147483647i32 - 1)
+#define INT64_MIN        (-9223372036854775807i64 - 1)
+#define INT8_MAX         127i8
+#define INT16_MAX        32767i16
+#define INT32_MAX        2147483647i32
+#define INT64_MAX        9223372036854775807i64
+#define UINT8_MAX        0xffui8
+#define UINT16_MAX       0xffffui16
+#define UINT32_MAX       0xffffffffui32
+#define UINT64_MAX       0xffffffffffffffffui64
 #endif
-#define _SIZE_T_DEFINED
-#endif
+#define CS_WINKERNEL_TYPES_DEFINED 1
 
 #ifndef _PTRDIFF_T_DEFINED
 typedef LONG_PTR ptrdiff_t;
@@ -78,6 +84,8 @@ void * CAPSTONE_API cs_winkernel_malloc(size_t size);
 void * CAPSTONE_API cs_winkernel_calloc(size_t n, size_t size);
 void * CAPSTONE_API cs_winkernel_realloc(void *ptr, size_t size);
 int CAPSTONE_API cs_winkernel_vsnprintf(char *buffer, size_t count, const char *format, va_list argptr);
+typedef int (__cdecl *cs_winkernel_qsort_compare_t)(const void *a, const void *b);
+void CAPSTONE_API cs_winkernel_qsort(void *base, size_t num, size_t size, cs_winkernel_qsort_compare_t cmp);
 
 #ifdef __cplusplus
 }
@@ -90,6 +98,7 @@ int CAPSTONE_API cs_winkernel_vsnprintf(char *buffer, size_t count, const char *
 #define realloc(ptr, size)  cs_winkernel_realloc(ptr, size)
 #define free(ptr)           cs_winkernel_free(ptr)
 #define vsnprintf           cs_winkernel_vsnprintf
+#define qsort               cs_winkernel_qsort
 #endif
 
 // kern_os_* functions (used by Capstone for OSX, need to define for Windows)
@@ -147,12 +156,25 @@ static __inline size_t cs_strlen(const char *str) {
 #endif
 
 // Limits (replace limits.h)
+#ifndef INT_MIN
+#define INT_MIN (-2147483647 - 1)
+#endif
+
+#ifndef LONG_MIN
+#define LONG_MIN (-2147483647L - 1)
+#endif
+
 #ifndef INT_MAX
 #define INT_MAX 2147483647
 #endif
 
 #ifndef UINT_MAX
 #define UINT_MAX 0xffffffffU
+#endif
+
+// offsetof (replace stddef.h)
+#ifndef offsetof
+#define offsetof(type, member) ((size_t)(&(((type *)0)->member)))
 #endif
 
 #endif // defined(_KERNEL_MODE) || defined(CAPSTONE_WINKERNEL)

@@ -4,13 +4,44 @@
 #ifndef CAPSTONE_PLATFORM_H
 #define CAPSTONE_PLATFORM_H
 
-// Windows Kernel Mode - types already defined in winkernel_mm.h
+// Kernel mode: use winkernel_mm.h for types, and define PRI macros here.
 #if defined(_KERNEL_MODE) || defined(CAPSTONE_WINKERNEL)
-    // Types already defined in winkernel_mm.h - skip standard includes and type definitions
-    #ifndef _STDINT_TYPES_DEFINED
-    #define _STDINT_TYPES_DEFINED
-    #endif
-    // Skip the rest of type definitions for kernel mode - they're in winkernel_mm.h
+#include "../../windows/winkernel_mm.h"
+#ifndef __PRI_8_LENGTH_MODIFIER__
+#define __PRI_8_LENGTH_MODIFIER__ "hh"
+#define __PRI_64_LENGTH_MODIFIER__ "ll"
+#endif
+
+#ifndef PRId8
+#define PRId8         __PRI_8_LENGTH_MODIFIER__ "d"
+#define PRIi8         __PRI_8_LENGTH_MODIFIER__ "i"
+#define PRIo8         __PRI_8_LENGTH_MODIFIER__ "o"
+#define PRIu8         __PRI_8_LENGTH_MODIFIER__ "u"
+#define PRIx8         __PRI_8_LENGTH_MODIFIER__ "x"
+#define PRIX8         __PRI_8_LENGTH_MODIFIER__ "X"
+
+#define PRId16        "hd"
+#define PRIi16        "hi"
+#define PRIo16        "ho"
+#define PRIu16        "hu"
+#define PRIx16        "hx"
+#define PRIX16        "hX"
+
+#define PRId32        "d"
+#define PRIi32        "i"
+#define PRIo32        "o"
+#define PRIu32        "u"
+#define PRIx32        "x"
+#define PRIX32        "X"
+
+#define PRId64        __PRI_64_LENGTH_MODIFIER__ "d"
+#define PRIi64        __PRI_64_LENGTH_MODIFIER__ "i"
+#define PRIo64        __PRI_64_LENGTH_MODIFIER__ "o"
+#define PRIu64        __PRI_64_LENGTH_MODIFIER__ "u"
+#define PRIx64        __PRI_64_LENGTH_MODIFIER__ "x"
+#define PRIX64        __PRI_64_LENGTH_MODIFIER__ "X"
+#endif
+
 #else
 
 // handle C99 issue (for pre-2013 VisualStudio)
@@ -18,7 +49,7 @@
 // MSVC
 
 // stdbool.h
-#if (_MSC_VER < 1800)
+#if (_MSC_VER < 1800) || defined(_KERNEL_MODE)
 // this system does not have stdbool.h
 #ifndef __cplusplus
 typedef unsigned char bool;
@@ -47,6 +78,7 @@ typedef unsigned char bool;
 
 #if defined(_MSC_VER) && (_MSC_VER <= 1600 || defined(_KERNEL_MODE))
 // this system does not have stdint.h
+#if !defined(CS_WINKERNEL_TYPES_DEFINED)
 typedef signed char  int8_t;
 typedef signed short int16_t;
 typedef signed int   int32_t;
@@ -55,6 +87,7 @@ typedef unsigned short uint16_t;
 typedef unsigned int   uint32_t;
 typedef signed long long   int64_t;
 typedef unsigned long long uint64_t;
+#endif  // !defined(CS_WINKERNEL_TYPES_DEFINED)
 #endif  // defined(_MSC_VER) && (_MSC_VER <= 1600 || defined(_KERNEL_MODE))
 
 #if defined(_MSC_VER) && (_MSC_VER < 1600 || defined(_KERNEL_MODE))
@@ -127,6 +160,6 @@ typedef unsigned long long uint64_t;
 #include <inttypes.h>
 #endif  // defined(CAPSTONE_HAS_OSXKERNEL) || (defined(_MSC_VER) && (_MSC_VER <= 1700 || defined(_KERNEL_MODE)))
 
-#endif  // _KERNEL_MODE / CAPSTONE_WINKERNEL check
+#endif  // _KERNEL_MODE / CAPSTONE_WINKERNEL
 
 #endif  // CAPSTONE_PLATFORM_H
